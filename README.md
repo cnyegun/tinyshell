@@ -7,5 +7,8 @@ A Shell does three main things
 
 # Basic loop
 
+1. Read: from stdin.
+2. Parse: separate the command string to program names and arguments.
+3. Execute: run the parsed commands. 
 
 
