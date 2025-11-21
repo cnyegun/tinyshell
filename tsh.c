@@ -9,36 +9,44 @@
 char *tsh_read_line(void)
 {
 	char *line = NULL;
-	size_t line_size = 512;
-	ssize_t line_len = 0;
-	line_len = getline(&line, &line_size, stdin);
+	size_t line_size = 0;
+	ssize_t line_len = getline(&line, &line_size, stdin);
+
 	if (line_len == -1) {
 		free(line);
 		return NULL;
 	}
+
 	if (line_len > 0 && line[line_len - 1] == '\n')
 		line[--line_len] = '\0';
+
 	return line;
 }
 
 char **tsh_parse_args(size_t *argc, char *line)
 {
 	char **argv = malloc(sizeof *argv * (MAX_ARGS + 1));
+	if (!argv) 
+	{
+		fprintf(stderr, "Error: allocation error\n");
+		return NULL;
+	}
+
 	char *saveptr = NULL;
 	*argc = 0;
-	char *delimiter = " \t";
+	const char *delimiter = " \t";
 	char *token = strtok_r(line, delimiter, &saveptr);
 
 	while (token != NULL) 
 	{
-		if (*argc >= MAX_ARGS) {
+		if (*argc >= MAX_ARGS) 
+		{
 			fprintf(stderr, "Error: too many arguments\n");
 			free(argv);
 			return NULL; 
 		}
 
 		argv[(*argc)++] = token;
-
 		token = strtok_r(NULL, delimiter, &saveptr);
 	}
 
