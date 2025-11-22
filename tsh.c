@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/wait.h>
 
 #define MAX_ARGS 256
 
@@ -61,6 +63,42 @@ int tsh_execute(size_t argc, char **argv)
 	return 1;
 }
 
+int tsh_launch(char **argv)
+{
+	pid_t pid, wpid;
+	int status;
+
+	pid = fork();
+	if (pid == 0)
+	{
+		// Child process
+		if (execvp(argv[0], argv) == -1)
+		{
+			perror(argv[0]);
+		}
+		exit(EXIT_FAILURE);
+	}
+	else if (pid < 0) 
+	{
+		perror("failed to fork()");
+	}
+	else 
+	{
+		// Parent process
+		do 
+		{
+			wpid = waitpid(pid, &status, WUNTRACED);
+			if (wpid == -1)
+			{
+				perror("waitpid");
+				break;
+			}
+		} while (!WIFEXITED(status) && !WIFSIGNALED(status));
+	}
+
+	return 1;
+}
+
 void tsh_loop(void)
 {
 	char *line;
@@ -92,11 +130,7 @@ void tsh_loop(void)
 			continue;
 		}
 
-		for (size_t i = 0; i < argc; i++) {
-			printf("argv[%zu]: %s\n", i, argv[i]);
-		}
-
-		status = tsh_execute(argc, argv);
+		status = tsh_launch(argv);
 
 		// Clean up
 		free(argv);
