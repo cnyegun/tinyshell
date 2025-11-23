@@ -8,6 +8,64 @@
 
 #define MAX_ARGS 256
 
+int tsh_cd(char **args);
+int tsh_help(char **args);
+int tsh_exit(char **args);
+
+char *builtin_str[] =
+{
+	"cd", 
+	"help",
+	"exit"
+};
+
+int (*builtin_func[]) (char **) =
+{
+	&tsh_cd,
+	&tsh_help,
+	&tsh_exit
+};
+
+int tsh_num_builtins()
+{
+	return sizeof(builtin_str) / sizeof(char *);
+}
+
+int tsh_cd(char **args)
+{
+	(void)args;
+	if (args[1] == NULL) {
+		fprintf(stderr, "tsh: expected argument to \"cd\".\n");
+	} else {
+		if (chdir(args[1]) != 0) {
+			perror("tsh");
+		}
+	}
+
+	return 1;
+}
+
+int tsh_help(char **args)
+{
+	(void)args;
+	int i;
+	printf("Chi Nguyen's Tinyshell\n");
+	printf("Type program names and arguments, and hit enter.\n");
+	printf("The following are built in:\n");
+
+	for (i = 0; i < tsh_num_builtins(); ++i) {
+		printf("	%s\n", builtin_str[i]);
+	}
+	printf("Use the man command for information on other programs.\n");
+	return 1;
+}
+
+int tsh_exit(char **args)
+{
+	(void)args;
+	return 0;
+}
+
 char *tsh_read_line(void)
 {
 	char *line = NULL;
@@ -52,15 +110,9 @@ char **tsh_parse_args(size_t *argc, char *line)
 		token = strtok_r(NULL, delimiter, &saveptr);
 	}
 
+	// Must be terminated with a NULL pointer
 	argv[*argc] = NULL;
 	return argv;
-}
-
-int tsh_execute(size_t argc, char **argv)
-{
-	(void)argc;
-	(void)argv;
-	return 1;
 }
 
 int tsh_launch(char **argv)
@@ -80,7 +132,7 @@ int tsh_launch(char **argv)
 	}
 	else if (pid < 0) 
 	{
-		perror("failed to fork()");
+		perror("tsh");
 	}
 	else 
 	{
@@ -90,13 +142,27 @@ int tsh_launch(char **argv)
 			wpid = waitpid(pid, &status, WUNTRACED);
 			if (wpid == -1)
 			{
-				perror("waitpid");
+				perror("tsh");
 				break;
 			}
 		} while (!WIFEXITED(status) && !WIFSIGNALED(status));
 	}
 
 	return 1;
+}
+
+int tsh_execute(size_t argc, char **argv)
+{
+	int i;
+	// Empty command;
+	if (argc == 0) return 1;
+
+	for (i = 0; i < tsh_num_builtins(); ++i) {
+		if (strcmp(argv[0], builtin_str[i]) == 0) {
+			return (*builtin_func[i])(argv);
+		}
+	}
+	return tsh_launch(argv);
 }
 
 void tsh_loop(void)
@@ -130,7 +196,7 @@ void tsh_loop(void)
 			continue;
 		}
 
-		status = tsh_launch(argv);
+		status = tsh_execute(argc, argv);
 
 		// Clean up
 		free(argv);
