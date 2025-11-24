@@ -1,3 +1,5 @@
+*this project has been archived*
+
 # Lifetime
 
 A Shell does three main things
@@ -16,5 +18,3 @@ A Shell does three main things
 1. Create a fork of the current program.
 2. Run the arguments with execvp on the child process.
 3. Parent process wait for the child process to exits/signals.
-
-
